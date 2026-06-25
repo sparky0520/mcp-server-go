@@ -109,19 +109,6 @@ func (s *Server) Run(ctx context.Context) error {
 		// parse JSON, validate version, dispatch to handler
 		var req jsonrpc.Request
 
-		// 🔍 RIGHT HERE: Protocol Version Validation
-		if req.JSONRPC != "2.0" {
-			s.writeResponse(jsonrpc.Response{
-				JSONRPC: "2.0",
-				ID:      req.ID, // Fallback to whatever ID they provided (or nil)
-				Error: &jsonrpc.Error{
-					Code:    jsonrpc.InvalidRequest,
-					Message: "Invalid Request: missing or incorrect jsonrpc version",
-				},
-			})
-			continue // Skip processing this bad request
-		}
-
 		if err := json.Unmarshal(line, &req); err != nil {
 			s.logger.Error("failed to unmarshal request", slog.String("error", err.Error()))
 			// Write a standard JSON-RPC ParseError error back to the client
@@ -133,6 +120,19 @@ func (s *Server) Run(ctx context.Context) error {
 				},
 			})
 			continue // skip to next loop
+		}
+
+		// 🔍 RIGHT HERE: Protocol Version Validation
+		if req.JSONRPC != "2.0" {
+			s.writeResponse(jsonrpc.Response{
+				JSONRPC: "2.0",
+				ID:      req.ID, // Fallback to whatever ID they provided (or nil)
+				Error: &jsonrpc.Error{
+					Code:    jsonrpc.InvalidRequest,
+					Message: "Invalid Request: missing or incorrect jsonrpc version",
+				},
+			})
+			continue // Skip processing this bad request
 		}
 
 		if err := s.handleRequest(ctx, req); err != nil {
@@ -241,6 +241,15 @@ func (s *Server) requireInitialized(req jsonrpc.Request) error {
 	}
 
 	return errNotInitialized
+}
+
+func (s *Server) handlePing(ctx context.Context, req jsonrpc.Request) error {
+	// The MCP ping method expects an empty result object
+	return s.writeResponse(jsonrpc.Response{
+		JSONRPC: "2.0",
+		ID:      req.ID,
+		Result:  map[string]any{},
+	})
 }
 
 func (s *Server) handleToolsList(ctx context.Context, req jsonrpc.Request) error {

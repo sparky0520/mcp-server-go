@@ -7,11 +7,17 @@ import (
 	"time"
 )
 
-type RequestBuilder interface {
+type requestBuilder interface {
 	NewRequestWithContext(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error)
 }
 
-var requestBuilderProvider requestBuilder = &defaultRequestBuildProvider{}
+type defaultRequestBuilderProvider struct{}
+
+func (d *defaultRequestBuilderProvider) NewRequestWithContext(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
+	return http.NewRequestWithContext(ctx, method, url, body)
+}
+
+var requestBuilderProvider requestBuilder = &defaultRequestBuilderProvider{}
 
 type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)

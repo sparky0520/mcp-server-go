@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"context"
@@ -34,5 +34,13 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		logger.Info("shutdown signal received", slog.String("signal", sig.String()))
 		cancel()
 		return nil
+	}
+}
+
+func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	if err := run(context.Background(), logger); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
 }
